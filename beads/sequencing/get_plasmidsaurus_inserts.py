@@ -95,6 +95,9 @@ def main():
   parser.add_argument("-o", default="inserts", type=str, help="file name for output")
   args = parser.parse_args()
 
+  upstream = args.u.upper()
+  downstream = args.d.upper()
+
   if args.f == 'levenshtein':
     try:
       import Levenshtein
@@ -117,27 +120,27 @@ def main():
   # get first instance of upstream sequence and the sequence downstream of it
   insert_regions = []
   for seq in reads_concat:
-    index = first_index_of_kmer(seq, args.u, args.t, dist_func)
+    index = first_index_of_kmer(seq, upstream, args.t, dist_func)
     if index >= 0:
-      insert_regions.append(seq[index:index + args.l * 2 + len(args.u) + len(args.d)])
+      insert_regions.append(seq[index:index + args.l * 2 + len(upstream) + len(downstream)])
     else:
-      index_rev = first_index_of_kmer(rev_comp(seq), args.u, args.t, dist_func)
+      index_rev = first_index_of_kmer(rev_comp(seq), upstream, args.t, dist_func)
       if index_rev >= 0:
-        insert_regions.append(rev_comp(seq)[index_rev:index_rev + args.l * 2 + len(args.u) + len(args.d)])
+        insert_regions.append(rev_comp(seq)[index_rev:index_rev + args.l * 2 + len(upstream) + len(downstream)])
 
   # find best match of upstream and downstream sequence and extract insert
   inserts = []
   for seq in insert_regions:
-    up_idx = best_index_of_kmer(seq, args.u, args.t, dist_func)
-    down_idx = best_index_of_kmer(seq, args.d, args.t, dist_func)
+    up_idx = best_index_of_kmer(seq, upstream, args.t, dist_func)
+    down_idx = best_index_of_kmer(seq, downstream, args.t, dist_func)
     if down_idx >= 0:
-      inserts.append((seq[up_idx:up_idx + len(args.u)], seq[up_idx + len(args.u): down_idx], seq[down_idx:down_idx + len(args.d)]))
+      inserts.append((seq[up_idx:up_idx + len(upstream)], seq[up_idx + len(upstream): down_idx], seq[down_idx:down_idx + len(downstream)]))
 
   print(f'Number of matches found: {len(inserts)}')
 
   insert_width = max([len(insert) for up, insert, down in inserts])
-  up_width = len(args.u)
-  down_width = len(args.d)
+  up_width = len(upstream)
+  down_width = len(downstream)
   table = [f"{'Upstream':<{up_width}}\t{'Insert':<{insert_width}}\t{'Downstream':<{down_width}}"]
   for upstream, insert, downstream in inserts:
     table.append(f"{upstream:<{up_width}}\t{insert:<{insert_width}}\t{downstream:<{down_width}}")
