@@ -92,6 +92,8 @@ def main():
   parser.add_argument("-l", required=True, type=int, help="expected maximum insert length")
   parser.add_argument("-t", default=3, type=int, help="threshold (maximum distance) for upstream and downstream matching")
   parser.add_argument("-f", default='levenshtein', choices = ['levenshtein', 'hamming'], type=str, help="distance function for upstream and downstream matching")
+  parser.add_argument("--no-empty", action='store_true', help="don't save matches with no insert")
+  parser.add_argument("--revcomp", action='store_true', help="also print reverse complement of inserts")
   parser.add_argument("-o", default="inserts", type=str, help="file name for output")
   args = parser.parse_args()
 
@@ -138,12 +140,18 @@ def main():
 
   print(f'Number of matches found: {len(inserts)}')
 
+  if args.no_empty:
+    inserts = [insert for insert in inserts if len(insert[1]) > 0]
+    print(f'Number of non-empty inserts found: {len(inserts)}')
+
   insert_width = max([len(insert) for up, insert, down in inserts])
   up_width = len(upstream)
   down_width = len(downstream)
   table = [f"{'Upstream':<{up_width}}\t{'Insert':<{insert_width}}\t{'Downstream':<{down_width}}"]
   for upstream, insert, downstream in inserts:
     table.append(f"{upstream:<{up_width}}\t{insert:<{insert_width}}\t{downstream:<{down_width}}")
+    if args.revcomp:
+      table.append(f"{'':<{up_width}}\t{rev_comp(insert):<{insert_width}}\t{'':<{down_width}}")
 
   print(f'Saving inserts table to {args.o}.txt')
   with open(f'{args.o}.txt', 'w') as f:
